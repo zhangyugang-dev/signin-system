@@ -1,0 +1,32 @@
+You are helping build a minimal conference check-in system inside an existing Next.js app.
+
+Goal: Build an MVP for a single event check-in system with these requirements:
+1. Single event only.
+2. Admin can configure event name and event time.
+3. Admin can upload attendee CSV with columns: name, phone.
+4. System stores attendees and derives phoneLast4.
+5. Public check-in page allows attendee to enter name + phone last 4 digits.
+6. Only imported attendees can check in.
+7. Already checked-in attendees cannot check in again.
+8. Admin dashboard shows total count, checked-in count, unchecked count, attendee list.
+9. Admin can export attendee results as CSV.
+10. Keep implementation minimal but polished, clean UI, business style.
+
+Technical constraints:
+- Use Next.js App Router with TypeScript.
+- Use Prisma + SQLite.
+- Avoid adding unnecessary auth for MVP.
+- Use server actions or route handlers where appropriate.
+- Make the app runnable locally.
+- Add a README with setup/run/deploy instructions.
+- Seed with a default single event if needed.
+
+Please modify the current project directly.
+After coding, ensure these exist:
+- prisma/schema.prisma
+- src/app/page.tsx (or appropriate landing/check-in page)
+- src/app/admin/page.tsx
+- APIs or server actions for upload/check-in/export
+- README.md
+
+Also make the homepage include event info and check-in form.

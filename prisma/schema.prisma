@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  name      String
+  eventTime DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attendee {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String
+  phoneLast4   String
+  checkedIn    Boolean  @default(false)
+  checkedInAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
