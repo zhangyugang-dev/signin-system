@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+type ExportAttendee = {
+  name: string;
+  phone: string;
+  phoneLast4: string;
+  checkedIn: boolean;
+  checkedInAt: Date | null;
+};
+
 export async function GET() {
   const attendees = await prisma.attendee.findMany({
     orderBy: { createdAt: "asc" },
   });
 
   const header = "姓名,手机号,手机号后四位,签到状态,签到时间\n";
-  const rows = attendees
+  const rows = (attendees as ExportAttendee[])
     .map((a) => {
       const status = a.checkedIn ? "已签到" : "未签到";
       const time = a.checkedInAt
