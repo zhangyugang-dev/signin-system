@@ -1,9 +1,9 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaSqlite } from "prisma-adapter-sqlite";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const adapter = new PrismaSqlite({
-  url: process.env.DATABASE_URL || "file:./dev.db",
-});
+const connectionString = process.env.DATABASE_URL!;
+
+const adapter = new PrismaPg({ connectionString });
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
