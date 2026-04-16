@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma";
 
 type ExportAttendee = {
   name: string;
-  phone: string;
+  phone: string | null;
   phoneLast4: string;
   checkedIn: boolean;
   checkedInAt: Date | null;
+  source: string;
 };
 
 export async function GET() {
@@ -14,10 +15,12 @@ export async function GET() {
     orderBy: { createdAt: "asc" },
   });
 
-  const header = "姓名,手机号,手机号后四位,签到状态,签到时间\n";
+  const header = "姓名,手机号,手机号后四位,来源,签到状态,签到时间\n";
   const rows = (attendees as ExportAttendee[])
     .map((a) => {
       const status = a.checkedIn ? "已签到" : "未签到";
+      const source = a.source === "walkin" ? "现场" : "导入";
+      const phone = a.phone || "";
       const time = a.checkedInAt
         ? new Date(a.checkedInAt).toLocaleString("zh-CN", {
             year: "numeric",
@@ -28,12 +31,11 @@ export async function GET() {
             second: "2-digit",
           })
         : "";
-      return `${a.name},${a.phone},${a.phoneLast4},${status},${time}`;
+      return `${a.name},${phone},${a.phoneLast4},${source},${status},${time}`;
     })
     .join("\n");
 
   const csv = header + rows;
-  // Add BOM for Excel compatibility with Chinese characters
   const bom = "\uFEFF";
   return new NextResponse(bom + csv, {
     headers: {

@@ -29,6 +29,7 @@ export async function uploadAttendees(records: { name: string; phone: string }[]
     name: r.name.trim(),
     phone: r.phone.trim(),
     phoneLast4: r.phone.trim().slice(-4),
+    source: "import",
   }));
 
   for (const a of attendees) {
@@ -41,21 +42,42 @@ export async function uploadAttendees(records: { name: string; phone: string }[]
 }
 
 export async function checkIn(name: string, phoneLast4: string) {
-  const attendee = await prisma.attendee.findFirst({
-    where: { name: name.trim(), phoneLast4 },
+  const trimmedName = name.trim();
+
+  // 1. 查找是否已有该 name+phoneLast4 的已签到记录
+  const existingCheckedIn = await prisma.attendee.findFirst({
+    where: { name: trimmedName, phoneLast4, checkedIn: true },
   });
 
-  if (!attendee) {
-    return { ok: false, error: "不在参会名单中" };
-  }
-
-  if (attendee.checkedIn) {
+  if (existingCheckedIn) {
     return { ok: false, error: "已签到，不可重复签到" };
   }
 
-  await prisma.attendee.update({
-    where: { id: attendee.id },
-    data: { checkedIn: true, checkedInAt: new Date() },
+  // 2. 查找是否有预导入的未签到记录匹配
+  const importedAttendee = await prisma.attendee.findFirst({
+    where: { name: trimmedName, phoneLast4, checkedIn: false, source: "import" },
+  });
+
+  if (importedAttendee) {
+    await prisma.attendee.update({
+      where: { id: importedAttendee.id },
+      data: { checkedIn: true, checkedInAt: new Date() },
+    });
+    revalidatePath("/");
+    revalidatePath("/admin");
+    return { ok: true };
+  }
+
+  // 3. 公开签到：创建新的 walkin 记录，直接标记已签到
+  await prisma.attendee.create({
+    data: {
+      name: trimmedName,
+      phone: null,
+      phoneLast4,
+      checkedIn: true,
+      checkedInAt: new Date(),
+      source: "walkin",
+    },
   });
 
   revalidatePath("/");
@@ -66,7 +88,8 @@ export async function checkIn(name: string, phoneLast4: string) {
 export async function getStats() {
   const total = await prisma.attendee.count();
   const checkedIn = await prisma.attendee.count({ where: { checkedIn: true } });
-  return { total, checkedIn, unchecked: total - checkedIn };
+  const walkinCount = await prisma.attendee.count({ where: { source: "walkin" } });
+  return { total, checkedIn, unchecked: total - checkedIn, walkin: walkinCount };
 }
 
 export async function getAttendees() {

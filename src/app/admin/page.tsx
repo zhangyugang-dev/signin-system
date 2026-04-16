@@ -14,10 +14,11 @@ import {
 interface Attendee {
   id: string;
   name: string;
-  phone: string;
+  phone: string | null;
   phoneLast4: string;
   checkedIn: boolean;
   checkedInAt: Date | null;
+  source: string;
   createdAt: Date;
 }
 
@@ -31,7 +32,7 @@ export default function AdminPage() {
   const [event, setEvent] = useState<EventData | null>(null);
   const [eventName, setEventName] = useState("");
   const [eventTime, setEventTime] = useState("");
-  const [stats, setStats] = useState({ total: 0, checkedIn: 0, unchecked: 0 });
+  const [stats, setStats] = useState({ total: 0, checkedIn: 0, unchecked: 0, walkin: 0 });
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [uploadMsg, setUploadMsg] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -79,8 +80,6 @@ export default function AdminPage() {
       return;
     }
 
-    // Parse CSV - support both comma and other delimiters
-    const header = lines[0].split(",");
     const records = lines.slice(1).map((line) => {
       const cols = line.split(",");
       return {
@@ -135,10 +134,11 @@ export default function AdminPage() {
         {/* Stats Cards */}
         <section>
           <h2 className="text-lg font-medium text-gray-900 mb-4">签到统计</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <StatCard label="总人数" value={stats.total} color="blue" />
             <StatCard label="已签到" value={stats.checkedIn} color="green" />
             <StatCard label="未签到" value={stats.unchecked} color="gray" />
+            <StatCard label="现场签到" value={stats.walkin} color="orange" />
           </div>
         </section>
 
@@ -194,7 +194,7 @@ export default function AdminPage() {
         <section className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-2">导入参会名单</h2>
           <p className="text-sm text-gray-500 mb-4">
-            上传 CSV 文件，格式：姓名,手机号（第一行为表头）
+            上传 CSV 文件，格式：姓名,手机号（第一行为表头）。未在名单中的参会人也可通过签到页面直接签到。
           </p>
           <div className="flex items-center gap-4">
             <input
@@ -237,7 +237,7 @@ export default function AdminPage() {
           </div>
           {attendees.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-gray-500">
-              暂无参会人，请先导入 CSV 名单
+              暂无参会人，可通过导入 CSV 名单或签到页面直接签到
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -246,6 +246,7 @@ export default function AdminPage() {
                   <tr className="border-b border-gray-200 bg-gray-50">
                     <th className="text-left px-6 py-3 font-medium text-gray-600">姓名</th>
                     <th className="text-left px-6 py-3 font-medium text-gray-600">手机号</th>
+                    <th className="text-left px-6 py-3 font-medium text-gray-600">来源</th>
                     <th className="text-left px-6 py-3 font-medium text-gray-600">签到状态</th>
                     <th className="text-left px-6 py-3 font-medium text-gray-600">签到时间</th>
                     <th className="text-right px-6 py-3 font-medium text-gray-600">操作</th>
@@ -255,7 +256,18 @@ export default function AdminPage() {
                   {attendees.map((a) => (
                     <tr key={a.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="px-6 py-3 text-gray-900">{a.name}</td>
-                      <td className="px-6 py-3 text-gray-600">{a.phone}</td>
+                      <td className="px-6 py-3 text-gray-600">{a.phone || `****${a.phoneLast4}`}</td>
+                      <td className="px-6 py-3">
+                        {a.source === "walkin" ? (
+                          <span className="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800">
+                            现场
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                            导入
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-3">
                         {a.checkedIn ? (
                           <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
@@ -299,12 +311,13 @@ function StatCard({
 }: {
   label: string;
   value: number;
-  color: "blue" | "green" | "gray";
+  color: "blue" | "green" | "gray" | "orange";
 }) {
   const colorMap = {
     blue: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", value: "text-blue-900" },
     green: { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", value: "text-green-900" },
     gray: { bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-700", value: "text-gray-900" },
+    orange: { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700", value: "text-orange-900" },
   };
   const c = colorMap[color];
   return (
